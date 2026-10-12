@@ -1064,7 +1064,8 @@ struct ChatTabView: View {
                                     isTranscribing: isTranscribing,
                                     isRetryingSpeech: isRetryingSpeech
                                 ),
-                                onSubmit: sendCurrentInput
+                                onSubmit: sendCurrentInput,
+                                onPasteImages: appendPastedImages
                             )
                             .frame(
                                 minHeight: DesignControls.composerTextMinHeight,
@@ -1330,6 +1331,19 @@ struct ChatTabView: View {
         .accessibilityIdentifier("chat-attachment-strip")
     }
 
+    private func appendPastedImages(_ images: [UIImage]) {
+        attachmentError = nil
+        for image in images {
+            do {
+                let attachment = try ComposerImageTranscoder.makeAttachment(from: image)
+                composerRevision &+= 1
+                imageAttachments.append(attachment)
+            } catch {
+                attachmentError = error.localizedDescription
+            }
+        }
+    }
+
     private func loadSelectedPhotos(_ items: [PhotosPickerItem]) async {
         guard !items.isEmpty else { return }
         attachmentError = nil
@@ -1514,7 +1528,7 @@ private struct ComposerAttachmentThumbnail: View {
     }
 }
 
-private enum ComposerImageTranscoder {
+enum ComposerImageTranscoder {
     static let maxDimension: CGFloat = 2048
     static let jpegQuality: CGFloat = 0.82
     static let maxByteSize = 5 * 1024 * 1024
@@ -1535,6 +1549,10 @@ private enum ComposerImageTranscoder {
 
     static func makeAttachment(from data: Data) throws -> ComposerImageAttachment {
         guard let image = UIImage(data: data) else { throw TranscodeError.invalidImage }
+        return try makeAttachment(from: image)
+    }
+
+    static func makeAttachment(from image: UIImage) throws -> ComposerImageAttachment {
         let resized = resize(image, maxDimension: maxDimension)
         guard let jpeg = resized.jpegData(compressionQuality: jpegQuality) else { throw TranscodeError.invalidImage }
         guard jpeg.count <= maxByteSize else { throw TranscodeError.tooLarge(jpeg.count) }

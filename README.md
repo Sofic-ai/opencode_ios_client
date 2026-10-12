@@ -12,7 +12,7 @@ No Apple Developer account needed. Just tap the link on your iOS device.
 
 ## Features
 
-- **Chat**: send messages, switch models, view AI replies with streaming, inspect tool calls and reasoning
+- **Chat**: send messages, paste images or attach photos, switch models, view AI replies with streaming, inspect tool calls and reasoning
 - **Files**: file tree browser, session diffs, markdown preview, image preview with zoom/pan, code view with line numbers
 - **Settings**: server connection, Basic Auth, SSH tunnel, theme, voice transcription
 - **Usage limits**: optional AI Usage Dashboard integration for provider quota windows

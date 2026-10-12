@@ -28,6 +28,7 @@ struct ChatComposerTextView: UIViewRepresentable {
     let placeholder: String
     let autoScrollToBottomOnTextChange: Bool
     let onSubmit: () -> Void
+    let onPasteImages: ([UIImage]) -> Void
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, hasMarkedText: $hasMarkedText, onSubmit: onSubmit)
@@ -53,6 +54,7 @@ struct ChatComposerTextView: UIViewRepresentable {
             context.coordinator.insertNewline(into: textView)
         }
         textView.text = text
+        textView.onPasteImages = onPasteImages
         context.coordinator.updateMarkedTextState(for: textView)
         return textView
     }
@@ -65,6 +67,7 @@ struct ChatComposerTextView: UIViewRepresentable {
             }
         }
         uiView.accessibilityLabel = placeholder
+        uiView.onPasteImages = onPasteImages
         uiView.onShiftReturn = {
             context.coordinator.insertNewline(into: uiView)
         }
@@ -138,6 +141,26 @@ struct ChatComposerTextView: UIViewRepresentable {
 
 final class IMEAwareTextView: UITextView {
     var onShiftReturn: (() -> Void)?
+    var onPasteImages: (([UIImage]) -> Void)?
+    var imagePasteboard: UIPasteboard = .general
+
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        // Checking availability does not read clipboard contents or trigger a paste prompt.
+        if action == #selector(paste(_:)), onPasteImages != nil, imagePasteboard.hasImages {
+            return true
+        }
+        return super.canPerformAction(action, withSender: sender)
+    }
+
+    override func paste(_ sender: Any?) {
+        // Read images only in response to an explicit paste action. Plain text keeps
+        // UIKit's normal insertion, selection, and undo behavior.
+        if let onPasteImages, let images = imagePasteboard.images, !images.isEmpty {
+            onPasteImages(images)
+            return
+        }
+        super.paste(sender)
+    }
 
     override var keyCommands: [UIKeyCommand]? {
         [
